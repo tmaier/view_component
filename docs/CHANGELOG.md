@@ -7,6 +7,10 @@ title: Changelog
 
 ## main
 
+* Update CI configuration to use `Appraisal`.
+
+    *Hans Lemuet, Simon Fish*
+
 * Alphabetize companies using ViewComponent and add Brightline to the list.
 
     *Jack Schuss*
