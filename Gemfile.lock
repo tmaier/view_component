@@ -1,12 +1,16 @@
-PATH
-  remote: .
+GIT
+  remote: https://github.com/excid3/appraisal.git
+  revision: 8bb003b273ae074356dc67b59ecc67c8ae2f3a27
+  branch: fix-bundle-env
   specs:
     view_component (2.49.0)
       activesupport (>= 5.0.0, < 8.0)
       method_source (~> 1.0)
 
-GEM
-  remote: https://rubygems.org/
+GIT
+  remote: https://github.com/rails/rails
+  revision: 086935ea1db543037609cd33f3b4d29e9fdd5c9a
+  ref: main
   specs:
     actioncable (7.0.2)
       actionpack (= 7.0.2)
@@ -73,13 +77,41 @@ GEM
       i18n (>= 1.6, < 2)
       minitest (>= 5.1)
       tzinfo (~> 2.0)
+    rails (7.1.0.alpha)
+      actioncable (= 7.1.0.alpha)
+      actionmailbox (= 7.1.0.alpha)
+      actionmailer (= 7.1.0.alpha)
+      actionpack (= 7.1.0.alpha)
+      actiontext (= 7.1.0.alpha)
+      actionview (= 7.1.0.alpha)
+      activejob (= 7.1.0.alpha)
+      activemodel (= 7.1.0.alpha)
+      activerecord (= 7.1.0.alpha)
+      activestorage (= 7.1.0.alpha)
+      activesupport (= 7.1.0.alpha)
+      bundler (>= 1.15.0)
+      railties (= 7.1.0.alpha)
+    railties (7.1.0.alpha)
+      actionpack (= 7.1.0.alpha)
+      activesupport (= 7.1.0.alpha)
+      method_source
+      rake (>= 12.2)
+      thor (~> 1.0)
+      zeitwerk (~> 2.5)
+
+PATH
+  remote: .
+  specs:
+    view_component (2.49.0)
+      activesupport (>= 5.0.0, < 8.0)
+      method_source (~> 1.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
     addressable (2.8.0)
       public_suffix (>= 2.0.2, < 5.0)
     ansi (1.5.0)
-    appraisal (2.4.1)
-      bundler
-      rake
-      thor (>= 0.14.0)
     ast (2.4.2)
     benchmark-ips (2.8.4)
     better_html (1.0.16)
@@ -265,7 +297,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  appraisal (~> 2.4)
+  appraisal!
   benchmark-ips (~> 2.8.2)
   better_html (~> 1)
   bundler (>= 1.15.0)
