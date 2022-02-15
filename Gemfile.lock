@@ -1,6 +1,7 @@
 GIT
-  remote: https://github.com/Spone/appraisal.git
-  revision: 35db063ad2cd3cd1d79bfad039bdfcc28fa11b58
+  remote: https://github.com/excid3/appraisal.git
+  revision: 14855fc54ce88b42def871ce8bfd4259fbf06043
+  branch: fix-bundle-env
   specs:
     view_component (2.49.0)
       activesupport (>= 5.0.0, < 8.0)
