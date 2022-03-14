@@ -55,14 +55,20 @@ jobs:
       uses: ruby/setup-ruby@v1
       with:
         ruby-version: ${{ matrix.ruby_version }}
+    - name: Determine dependency versions
+      run: |
+        bundle config path vendor/bundle
+        bundle
+        bundle lock
+      env:
+        MEASURE_COVERAGE: true
+        RAILS_VERSION: ${{ matrix.rails_version }}
     - uses: actions/cache@v2
       with:
         path: vendor/bundle
         key: gems-build-rails-${{ matrix.rails_version }}-ruby-${{ matrix.ruby_version }}-${{ hashFiles('gemfiles/rails_${{ matrix.rails_version }}.gemfile') }}
     - name: Build and test with Rake
       run: |
-        bundle config path vendor/bundle
-        bundle
         bundle exec appraisal rails-${{ matrix.rails_version }} bundle
         bundle exec appraisal rails-${{ matrix.rails_version }} rake
       env:
