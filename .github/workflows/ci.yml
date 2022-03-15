@@ -63,6 +63,11 @@ jobs:
       env:
         MEASURE_COVERAGE: true
         RAILS_VERSION: ${{ matrix.rails_version }}
+    - name: Fail if lockfile couldn't be found
+      if: hashFiles('**/gemfiles/rails_${{ matrix.rails_version }}.gemfile.lock') == ''
+      run: |
+        ls gemfiles
+        exit 1
     - uses: actions/cache@v2
       with:
         path: vendor/bundle
