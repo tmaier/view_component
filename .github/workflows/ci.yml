@@ -67,6 +67,11 @@ jobs:
       if: hashFiles('**/gemfiles/rails_${{ matrix.rails_version }}.gemfile.lock') == ''
       run: |
         ls gemfiles
+        echo
+        echo "${BUNDLE_GEMFILE}.lock"
+        if test -f "${BUNDLE_GEMFILE}.lock"; then
+          echo "It exists."
+        fi
         exit 1
     - uses: actions/cache@v2
       with:
