@@ -306,7 +306,7 @@ class ViewComponentTest < ViewComponent::TestCase
   end
 
   def test_with_content_areas_render_predicate
-    render_inline(ContentAreasPredicateComponent.new) do |c|
+    x = render_inline(ContentAreasPredicateComponent.new) do |c|
       c.with :title do
         "hello world"
       end
@@ -596,7 +596,7 @@ class ViewComponentTest < ViewComponent::TestCase
 
   def test_backtrace_returns_correct_file_and_line_number
     error =
-      assert_raises NameError do
+      assert_raises NoMethodError do
         render_inline(ExceptionInTemplateComponent.new)
       end
 

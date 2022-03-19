@@ -6,6 +6,7 @@ require "active_support/dependencies/autoload"
 module ViewComponent
   extend ActiveSupport::Autoload
 
+  autoload :OldBase
   autoload :Base
   autoload :Compiler
   autoload :CompileCache
@@ -14,6 +15,7 @@ module ViewComponent
   autoload :Instrumentation
   autoload :Preview
   autoload :PreviewTemplateError
+  autoload :Renderer
   autoload :TestHelpers
   autoload :TestCase
   autoload :TemplateError

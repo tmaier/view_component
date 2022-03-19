@@ -22,7 +22,7 @@ class Performance::InlineComponent < ViewComponent::Base
     safe_join(
       [
         content,
-        50.times.map { render NestedComponent.new(name: @name) }
+        2000.times.map { render NestedComponent.new(name: @name) }
       ],
       "\n\n"
     )

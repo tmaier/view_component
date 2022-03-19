@@ -22,7 +22,7 @@ module ViewComponent
       end
 
       if block_given?
-        content = view_context.capture(&block)
+        content = capture(&block)
       end
 
       instance_variable_set("@#{area}".to_sym, content)

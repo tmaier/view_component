@@ -12,7 +12,7 @@ require "view_component/slotable_v2"
 require "view_component/with_content_helper"
 
 module ViewComponent
-  class Base
+  class OldBase < ActionView::Base
     include ActiveSupport::Configurable
     include ViewComponent::ContentAreas
     include ViewComponent::Previewable
@@ -57,8 +57,6 @@ module ViewComponent
     _deprecated_generate_mattr_accessor :sidecar
     _deprecated_generate_mattr_accessor :stimulus_controller
 
-    attr_writer :renderer
-
     # Entrypoint for rendering components.
     #
     # - `view_context`: ActionView context from calling view
@@ -69,12 +67,26 @@ module ViewComponent
     # @return [String]
     def render_in(view_context, &block)
       @view_context = view_context
-
       self.__vc_original_view_context ||= view_context
-      @renderer ||= ViewComponent::Renderer.new(self.__vc_original_view_context)
+
+      @lookup_context ||= view_context.lookup_context
+
+      # required for path helpers in older Rails versions
+      @view_renderer ||= view_context.view_renderer
+
+      # For content_for
+      @view_flow ||= view_context.view_flow
+
+      # For i18n
+      @virtual_path ||= virtual_path
 
       # For template variants (+phone, +desktop, etc.)
-      @__vc_variant ||= @renderer.variant
+      @__vc_variant ||= @lookup_context.variants.first
+
+      # For caching, such as #cache_if
+      @current_template = nil unless defined?(@current_template)
+      old_current_template = @current_template
+      @current_template = self
 
       if block && defined?(@__vc_content_set_by_with_content)
         raise ArgumentError.new(
@@ -90,27 +102,13 @@ module ViewComponent
       before_render
 
       if render?
-        @renderer.render_component(self) do |buffer|
-          @output_buffer = buffer
-          render_template_for(@__vc_variant).to_s + _output_postamble
-        end
+        @output_buffer = ActionView::OutputBuffer.new
+        render_template_for(@__vc_variant).to_s + _output_postamble
       else
         ""
       end
-    end
-
-    def capture(*args, **kwargs, &block)
-      @renderer.capture(*args, **kwargs, &block)
-    end
-
-    # TODO use backtrace cleaner to remove renderer
-    def method_missing(method, *args, **kwargs, &block)
-      @renderer.send(method, *args, **kwargs, &block)
-    end
-    ruby2_keywords(:method_missing) if respond_to?(:ruby2_keywords, true)
-
-    def respond_to_missing?(method, all)
-      @renderer.respond_to?(method, all)
+    ensure
+      @current_template = old_current_template
     end
 
     # :nocov:
@@ -166,8 +164,7 @@ module ViewComponent
     def render(options = {}, args = {}, &block)
       if options.is_a? ViewComponent::Base
         options.__vc_original_view_context = __vc_original_view_context
-        options.renderer = @renderer
-        @renderer.render(options, args, &block)
+        super
       else
         __vc_original_view_context.render(options, args, &block)
       end
@@ -189,11 +186,7 @@ module ViewComponent
         )
       end
 
-      @renderer.controller
-    end
-
-    def url_options
-      controller.url_options
+      @__vc_controller ||= view_context.controller
     end
 
     # A proxy through which to access helpers. Use sparingly as doing so introduces
@@ -433,10 +426,6 @@ module ViewComponent
         # we need to check this to use this gem as a dependency
         if defined?(Rails) && Rails.application
           child.include Rails.application.routes.url_helpers unless child < Rails.application.routes.url_helpers
-
-          # Rails.application.routes.url_helpers defines url_options in an incompatible way.
-          # We need to delegate url_options to the controller for url_for and friends to work
-          child.delegate :url_options, to: :controller
         end
 
         # Derive the source location of the component Ruby file from the call stack.
@@ -595,4 +584,3 @@ module ViewComponent
     ActiveSupport.run_load_hooks(:view_component, self)
   end
 end
-
