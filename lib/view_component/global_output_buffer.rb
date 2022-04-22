@@ -3,6 +3,8 @@
 module ViewComponent
   module GlobalOutputBuffer
     def render_in(view_context, &block)
+      return super unless ViewComponent.use_global_output_buffer
+
       unless view_context.output_buffer.is_a?(OutputBufferStack)
         # use instance_variable_set here to avoid triggering the code in the #output_buffer= method below
         view_context.instance_variable_set(:@output_buffer, OutputBufferStack.new(view_context.output_buffer))
@@ -15,6 +17,8 @@ module ViewComponent
     end
 
     def perform_render
+      return super unless ViewComponent.use_global_output_buffer
+
       # HAML unhelpfully assigns to @output_buffer directly, so we hold onto a reference to
       # it and restore @output_buffer when the HAML engine is finished. In non-HAML cases,
       # @output_buffer and orig_buf will point to the same object, making the reassignment
@@ -28,10 +32,14 @@ module ViewComponent
     end
 
     def output_buffer=(other_buffer)
+      return super unless ViewComponent.use_global_output_buffer
+
       @output_buffer.replace(other_buffer)
     end
 
     def with_output_buffer(buf = nil)
+      return super unless ViewComponent.use_global_output_buffer
+
       unless buf
         buf = ActionView::OutputBuffer.new
         if output_buffer && output_buffer.respond_to?(:encoding)
@@ -55,6 +63,8 @@ module ViewComponent
 
     module ActionViewMods
       def output_buffer=(other_buffer)
+        return super unless ViewComponent.use_global_output_buffer
+
         if @output_buffer.is_a?(OutputBufferStack)
           @output_buffer.replace(other_buffer)
         else
@@ -63,6 +73,8 @@ module ViewComponent
       end
 
       def with_output_buffer(buf = nil)
+        return super unless ViewComponent.use_global_output_buffer
+
         unless buf
           buf = ActionView::OutputBuffer.new
           if @output_buffer && @output_buffer.respond_to?(:encoding)

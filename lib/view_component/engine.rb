@@ -20,7 +20,10 @@ module ViewComponent
       options.instrumentation_enabled = false if options.instrumentation_enabled.nil?
       options.preview_route ||= ViewComponent::Base.preview_route
       options.preview_controller ||= ViewComponent::Base.preview_controller
-      options.use_global_output_buffer = false if options.use_global_output_buffer.nil?
+
+      env_use_gob = ENV.fetch("VIEW_COMPONENT_USE_GLOBAL_OUTPUT_BUFFER", "false") == "true"
+      config_use_gob = app.config.view_component.use_global_output_buffer || false
+      ViewComponent.use_global_output_buffer = config_use_gob || env_use_gob
 
       if options.show_previews
         options.preview_paths << "#{Rails.root}/test/components/previews" if defined?(Rails.root) && Dir.exist?(
@@ -60,12 +63,8 @@ module ViewComponent
 
     initializer "view_component.enable_global_output_buffer" do |app|
       ActiveSupport.on_load(:view_component) do
-        env_use_gob = ENV.fetch("VIEW_COMPONENT_USE_GLOBAL_OUTPUT_BUFFER", "false") == "true"
-        config_use_gob = app.config.view_component.use_global_output_buffer
-
-        if config_use_gob || env_use_gob
+        if ENV.fetch("VIEW_COMPONENT_PREPEND_GOB", "false") == "true" || ViewComponent.use_global_output_buffer
           # :nocov:
-          app.config.view_component.use_global_output_buffer = true
           ViewComponent::Base.prepend(ViewComponent::GlobalOutputBuffer)
           ActionView::Base.prepend(ViewComponent::GlobalOutputBuffer::ActionViewMods)
           # :nocov:

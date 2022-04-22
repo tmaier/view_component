@@ -4,6 +4,10 @@ require "action_view"
 require "active_support/dependencies/autoload"
 
 module ViewComponent
+  class << self
+    attr_accessor :use_global_output_buffer
+  end
+
   extend ActiveSupport::Autoload
 
   autoload :Base

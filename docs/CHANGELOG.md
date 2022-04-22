@@ -11,6 +11,10 @@ title: Changelog
 
     *Joel Hawksley*
 
+* Change global output buffer behavior such that the buffer can be switched on and off in the same Ruby process.
+
+    *Cameron Dutro*
+
 ## 2.52.0
 
 * Add ADR for separate slot getter/setter API.
