@@ -22,7 +22,7 @@ module ViewComponent
       options.preview_controller ||= ViewComponent::Base.preview_controller
 
       env_use_gob = ENV.fetch("VIEW_COMPONENT_USE_GLOBAL_OUTPUT_BUFFER", "false") == "true"
-      config_use_gob = app.config.view_component.use_global_output_buffer || false
+      config_use_gob = app.config.view_component.delete(:use_global_output_buffer) || false
       ViewComponent.use_global_output_buffer = config_use_gob || env_use_gob
 
       if options.show_previews
