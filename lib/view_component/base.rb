@@ -12,12 +12,15 @@ require "view_component/slotable_v2"
 require "view_component/with_content_helper"
 
 module ViewComponent
-  class Base < ActionView::Base
+  class Base # < ActionView::Base
     include ActiveSupport::Configurable
     include ViewComponent::ContentAreas
     include ViewComponent::Previewable
     include ViewComponent::SlotableV2
     include ViewComponent::WithContentHelper
+
+    attr_reader :output_buffer
+    delegate :form_with, :form_for, :content_for, :tag, :asset_url, :t, :translate, :content_tag, :text_field_tag, to: :view_context
 
     ViewContextCalledBeforeRenderError = Class.new(StandardError)
 
@@ -69,7 +72,8 @@ module ViewComponent
       @view_context = view_context
       self.__vc_original_view_context ||= view_context
 
-      @output_buffer = ActionView::OutputBuffer.new unless @global_buffer_in_use
+      @output_buffer = view_context.output_buffer
+      @output_buffer ||= ActionView::OutputBuffer.new unless @global_buffer_in_use
 
       @lookup_context ||= view_context.lookup_context
 
