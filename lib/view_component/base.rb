@@ -20,7 +20,8 @@ module ViewComponent
     include ViewComponent::WithContentHelper
 
     attr_reader :output_buffer
-    delegate :form_with, :form_for, :content_for, :tag, :asset_url, :t, :translate, :content_tag, :text_field_tag, to: :view_context
+    delegate :url_for, :button_to, :capture, :form_with, :form_for, :content_for, :tag, :asset_url, :t, :translate, :content_tag, :text_field_tag, to: :view_context
+    delegate :root_path, to: :view_context
 
     ViewContextCalledBeforeRenderError = Class.new(StandardError)
 
@@ -173,7 +174,7 @@ module ViewComponent
     def render(options = {}, args = {}, &block)
       if options.is_a? ViewComponent::Base
         options.__vc_original_view_context = __vc_original_view_context
-        super
+        __vc_original_view_context.render(options, args, &block)
       else
         __vc_original_view_context.render(options, args, &block)
       end
