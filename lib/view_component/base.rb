@@ -11,6 +11,54 @@ require "view_component/slotable"
 require "view_component/slotable_v2"
 require "view_component/with_content_helper"
 
+module CompatCapture
+  extend ActiveSupport::Concern
+
+  included do
+    alias_method :orig_capture, :capture
+    prepend CaptureHelper
+  end
+
+  def current_renderer
+    @current_renderer ||= self
+  end
+
+  def current_renderer=(renderer)
+    @current_renderer = renderer
+  end
+
+  module CaptureHelper
+    def _run(*args, **kwargs, &block)
+      original_renderer = current_renderer
+      current_renderer = self
+      super
+    ensure
+      current_renderer = original_renderer
+    end
+
+    def capture(*args, &block)
+      value = nil
+      buffer = if current_renderer != self
+        buf = ActionView::OutputBuffer.new("")
+
+        current_renderer.with_output_buffer(buf) do
+          with_output_buffer(buf) { value = block.call(*args) }
+        end
+      else
+        with_output_buffer { value = yield(*args) }
+      end
+
+      if (string = buffer.presence || value) && string.is_a?(String)
+        ERB::Util.html_escape string
+      end
+    end
+  end
+end
+
+
+# Has to run before HAML
+ActionView::Base.include(CompatCapture)
+
 module ViewComponent
   class Base < ActionView::Base
     include ActiveSupport::Configurable
@@ -23,6 +71,10 @@ module ViewComponent
     ViewContextCalledBeforeRenderError = Class.new(StandardError)
 
     RESERVED_PARAMETER = :content
+
+    def current_renderer
+      self.__vc_original_view_context&.current_renderer || self
+    end
 
     # For CSRF authenticity tokens in forms
     delegate :form_authenticity_token, :protect_against_forgery?, :config, to: :helpers
@@ -69,6 +121,8 @@ module ViewComponent
     def render_in(view_context, &block)
       @view_context = view_context
       self.__vc_original_view_context ||= view_context
+      original_renderer = self.__vc_original_view_context.current_renderer
+      self.__vc_original_view_context.current_renderer = self
 
       @output_buffer = ActionView::OutputBuffer.new unless @global_buffer_in_use
 
@@ -111,6 +165,7 @@ module ViewComponent
       end
     ensure
       @current_template = old_current_template
+      self.__vc_original_view_context.current_renderer = original_renderer
     end
 
     def perform_render
