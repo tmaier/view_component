@@ -13,6 +13,25 @@ module ViewComponent
     PRODUCTION_MODE = :production
 
     class_attribute :mode, default: PRODUCTION_MODE
+    class_attribute :compiled_template_paths, default: []
+
+    def self.compile_implicit_components
+      extensions = (ActionView::Template.template_handler_extensions).join(",")
+      lookup = Rails.root.join(Base.view_component_path)
+
+      implicit_template_paths =
+        Dir.glob(lookup + "**/*.*{#{extensions}}") -
+        compiled_template_paths
+
+      implicit_template_paths.each do |implicit_template_path|
+        name = implicit_template_path.gsub(lookup.to_s + "/", "")
+        name = name.split(".").first
+        name = name.camelize
+
+        klass = Object.const_set(name, Class.new(ViewComponent::Base))
+        klass.__vc_template_path = implicit_template_path
+      end
+    end
 
     def initialize(component_class)
       @component_class = component_class
@@ -193,14 +212,17 @@ module ViewComponent
         begin
           extensions = ActionView::Template.template_handler_extensions
 
-          component_class._sidecar_files(extensions).each_with_object([]) do |path, memo|
-            pieces = File.basename(path).split(".")
-            memo << {
-              path: path,
-              variant: pieces.second.split("+").second&.to_sym,
-              handler: pieces.last
-            }
-          end
+          component_class._sidecar_files(extensions).
+            concat(Array(component_class.__vc_template_path)). # include implicit components
+              each_with_object([]) do |path, memo|
+                pieces = File.basename(path).split(".")
+                self.class.compiled_template_paths << path
+                memo << {
+                  path: path,
+                  variant: pieces.second.split("+").second&.to_sym,
+                  handler: pieces.last
+                }
+              end
         end
     end
 

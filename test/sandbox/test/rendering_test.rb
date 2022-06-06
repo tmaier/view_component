@@ -1033,4 +1033,10 @@ class ViewComponentTest < ViewComponent::TestCase
       assert_selector(".base-component", count: 1)
     end
   end
+
+  def test_compiles_component_without_ruby_file
+    render_inline(NoRubyComponent.new)
+
+    assert_text("No ruby file, no problem!")
+  end
 end

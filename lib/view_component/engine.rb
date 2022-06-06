@@ -83,7 +83,10 @@ module ViewComponent
 
     initializer "view_component.eager_load_actions" do
       ActiveSupport.on_load(:after_initialize) do
-        ViewComponent::Base.descendants.each(&:compile) if Rails.application.config.eager_load
+        if Rails.application.config.eager_load
+          ViewComponent::Base.descendants.each(&:compile)
+          ViewComponent::Compiler.compile_implicit_components
+        end
       end
     end
 
