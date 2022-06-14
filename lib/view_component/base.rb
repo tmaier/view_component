@@ -183,11 +183,8 @@ module ViewComponent
     #
     # @private
     def render(options = {}, args = {}, &block)
-      if options.respond_to?(:render_in)
-        if options.is_a?(ViewComponent::Base)
-          options.__vc_original_view_context = __vc_original_view_context
-        end
-
+      if options.is_a? ViewComponent::Base
+        options.__vc_original_view_context = __vc_original_view_context
         super
       else
         __vc_original_view_context.render(options, args, &block)

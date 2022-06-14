@@ -9,6 +9,10 @@ title: Changelog
 
 ## main
 
+* Revert change that results in non-ViewComponent objects utilizing `render_in` no longer having access to the original `view_context` object.
+
+  _Blake Williams_
+
 ## 2.57.0
 
 * Add missing `require` for `Translatable` module in `Base`.
