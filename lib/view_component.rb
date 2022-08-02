@@ -13,9 +13,7 @@ module ViewComponent
   autoload :DelegatedRender
   autoload :DelegatedSlots
   autoload :Deprecation
-  autoload :GlobalOutputBuffer
   autoload :Instrumentation
-  autoload :OutputBufferStack
   autoload :Preview
   autoload :PreviewTemplateError
   autoload :TestHelpers

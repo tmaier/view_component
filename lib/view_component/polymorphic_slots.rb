@@ -10,7 +10,7 @@ module ViewComponent
         location = Kernel.caller_locations(1, 1)[0]
 
         warn(
-          "warning: ViewComponent::PolymorphicSlots is now included in ViewComponent::Base by default "\
+          "warning: ViewComponent::PolymorphicSlots is now included in ViewComponent::Base by default " \
           "and can be removed from #{location.path}:#{location.lineno}"
         )
         # :nocov:
@@ -42,6 +42,10 @@ module ViewComponent
           define_method(getter_name) do
             get_slot(slot_name)
           end
+
+          define_method("#{getter_name}?") do
+            get_slot(slot_name).present?
+          end
         end
 
         renderable_hash = types.each_with_object({}) do |(poly_type, poly_callable), memo|
@@ -58,7 +62,7 @@ module ViewComponent
 
           define_method(setter_name) do |*args, &block|
             ViewComponent::Deprecation.warn(
-              "polymorphic slot setters like `#{setter_name}` are deprecated and will be removed in"\
+              "polymorphic slot setters like `#{setter_name}` are deprecated and will be removed in " \
               "ViewComponent v3.0.0.\n\nUse `with_#{setter_name}` instead."
             )
 
@@ -72,7 +76,7 @@ module ViewComponent
           ruby2_keywords(:"with_#{setter_name}") if respond_to?(:ruby2_keywords, true)
         end
 
-        self.registered_slots[slot_name] = {
+        registered_slots[slot_name] = {
           collection: collection,
           renderable_hash: renderable_hash
         }

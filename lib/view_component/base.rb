@@ -86,10 +86,12 @@ module ViewComponent
     #
     # @return [String]
     def render_in(view_context, &block)
+      self.class.compile(raise_errors: true)
+
       @view_context = view_context
       self.__vc_original_view_context ||= view_context
 
-      @output_buffer = ActionView::OutputBuffer.new unless defined?(@global_buffer_in_use) && @global_buffer_in_use
+      @output_buffer = ActionView::OutputBuffer.new
 
       @lookup_context ||= view_context.lookup_context
 
@@ -124,17 +126,12 @@ module ViewComponent
       before_render
 
       if render?
-        perform_render
+        render_template_for(@__vc_variant).to_s + _output_postamble
       else
         ""
       end
     ensure
       @current_template = old_current_template
-    end
-
-    # @private
-    def perform_render
-      render_template_for(@__vc_variant).to_s + _output_postamble
     end
 
     # Subclass components that call `super` inside their template code will cause a
@@ -151,17 +148,6 @@ module ViewComponent
       method(mtd).super_method.call
       nil
     end
-
-    # @private
-    # :nocov:
-    def render_template_for(variant = nil)
-      # Force compilation here so the compiler always redefines render_template_for.
-      # This is mostly a safeguard to prevent infinite recursion.
-      self.class.compile(raise_errors: true, force: true)
-      # .compile replaces this method; call the new one
-      render_template_for(variant)
-    end
-    # :nocov:
 
     # EXPERIMENTAL: Optional content to be returned after the rendered template.
     #
@@ -194,7 +180,8 @@ module ViewComponent
     end
 
     # @private
-    def initialize(*); end
+    def initialize(*)
+    end
 
     # Re-use original view_context if we're not rendering a component.
     #
@@ -585,7 +572,7 @@ module ViewComponent
       #
       # @return [Boolean]
       def strip_trailing_whitespace?
-        self.__vc_strip_trailing_whitespace
+        __vc_strip_trailing_whitespace
       end
 
       # Ensure the component initializer accepts the
@@ -635,11 +622,7 @@ module ViewComponent
 
       # @private
       def collection_parameter
-        if provided_collection_parameter
-          provided_collection_parameter
-        else
-          name && name.demodulize.underscore.chomp("_component").to_sym
-        end
+        provided_collection_parameter || name && name.demodulize.underscore.chomp("_component").to_sym
       end
 
       # @private
