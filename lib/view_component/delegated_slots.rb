@@ -2,128 +2,81 @@
 
 module ViewComponent
   module DelegatedSlots
-    SlotTarget = Struct.new(:target, :block, :collection, keyword_init: true) do
-      alias collection? collection
-    end
-
-    SlotTargetRef = Struct.new(:slot_target, :singular_name, :plural_name, keyword_init: true) do
-      delegate :target, :block, :collection?, to: :slot_target
-    end
-
     def self.included(base)
       base.include(InstanceMethods)
       base.extend(ClassMethods)
     end
 
-    module Utils
-      class << self
-        def find_slot_target(component, slot_name)
-          singular_name = slot_name.to_s.singularize.to_sym
-          plural_name = slot_name.to_s.pluralize.to_sym
+    module InstanceMethods
+      private
 
-          slot_target =
-            component.class.__vc_delegated_slot_targets[singular_name] ||
-            component.class.__vc_delegated_slot_targets[plural_name]
+      def get_delegated_slot(slot_name, target)
+        content unless content_evaluated? # ensure content is loaded so slots will be defined
 
-          return unless slot_target
-
-          SlotTargetRef.new(
-            slot_target: slot_target,
-            singular_name: singular_name,
-            plural_name: plural_name
-          )
-        end
+        target_obj = instance_eval(target.to_s)
+        target_obj.send(slot_name)
       end
+
+      def set_delegated_slot(slot_name, target, *args, block, delegated_slot_block)
+        target_obj = instance_eval(target.to_s)
+        return target_obj.send(slot_name, *args, &block) unless delegated_slot_block
+
+        delegated_slot_block.call(target_obj, *args, &block)
+      end
+      ruby2_keywords(:set_delegated_slot) if respond_to?(:ruby2_keywords, true)
     end
 
-    module InstanceMethods
-      def method_missing(method_name, *args, &slot_block)
-        slot_target = Utils.find_slot_target(self, method_name)
-        return super unless slot_target
-
-        # collection/non-collection setter containing with_* prefix
-        self.class.define_method(:"with_#{slot_target.singular_name}") do |*args|
-          set_delegated_slot(slot_target, *args, &slot_block)
-        end
-        if self.class.respond_to?(:ruby2_keywords, true)
-          self.class.send(:ruby2_keywords, :"with_#{slot_target.singular_name}")
-        end
-
-        if slot_target.collection?
-          # collection setter
-          self.class.define_method(slot_target.singular_name) do |*args|
-            # Deprecated: Will remove in 3.0
-            set_delegated_slot(slot_target, *args, &slot_block)
-          end
-
-          # collection getter
-          self.class.define_method(slot_target.plural_name) do
-            get_delegated_slot(slot_target)
-          end
-        else
-          # non-collection getter/setter combo
-          self.class.define_method(slot_target.singular_name) do |*args|
-            if args.empty? && slot_block.nil?
-              get_delegated_slot(slot_target)
-            else
-              # Deprecated: Will remove in 3.0
-              set_delegated_slot(slot_target, *args, &slot_block)
-            end
-          end
-        end
-        self.class.send(:ruby2_keywords, slot_target.singular_name) if self.class.respond_to?(:ruby2_keywords, true)
-
-        send(method_name, *args, &slot_block)
-      end
-      ruby2_keywords(:method_missing) if respond_to?(:ruby2_keywords, true)
-
-      def respond_to?(method_name, _include_private = false)
-        Utils.find_slot_target(self, method_name) || super
+    module ClassMethods
+      def delegate_renders_one(slot_name, to:, &block)
+        define_delegated_slot(slot_name, to, collection: false, &block)
       end
 
-      def respond_to_missing?(method_name, _include_private = false)
-        Utils.find_slot_target(self, method_name) || super
+      def delegate_renders_many(slot_name, to:, &block)
+        define_delegated_slot(slot_name, to, collection: true, &block)
       end
 
       private
 
-      def get_delegated_slot(slot_target)
-        content unless content_evaluated? # ensure content is loaded so slots will be defined
-        target_obj = instance_eval(slot_target.target.to_s)
+      def define_delegated_slot(slot_name, target, collection:, &delegated_slot_block)
+        delegated_slot_block.ruby2_keywords if delegated_slot_block.respond_to?(:ruby2_keywords, true)
 
-        if slot_target.collection?
-          target_obj.send(slot_target.plural_name)
-        else
-          target_obj.send(slot_target.singular_name)
+        singular_name = slot_name.to_s.singularize.to_sym
+        plural_name = slot_name.to_s.pluralize.to_sym
+
+        # collection/non-collection setter containing with_* prefix
+        define_method(:"with_#{singular_name}") do |*args, &block|
+          block.ruby2_keywords if block.respond_to?(:ruby2_keywords, true)
+          set_delegated_slot(singular_name, target, *args, block, delegated_slot_block)
         end
-      end
+        if respond_to?(:ruby2_keywords, true)
+          send(:ruby2_keywords, :"with_#{singular_name}")
+        end
 
-      def set_delegated_slot(slot_target, *args, &slot_block)
-        target_obj = instance_eval(slot_target.target.to_s)
-        return target_obj.send(slot_target.singular_name, *args, &slot_block) unless slot_target.block
+        if collection
+          # collection setter
+          define_method(singular_name) do |*args, &block|
+            block.ruby2_keywords if block.respond_to?(:ruby2_keywords, true)
+            # Deprecated: Will remove in 3.0
+            set_delegated_slot(singular_name, target, *args, block, delegated_slot_block)
+          end
 
-        callback_block = ->(*mod_args) {
-          target_obj.send(slot_target.singular_name, *mod_args, &slot_block)
-        }
-        callback_block.send(:ruby2_keywords) if callback_block.respond_to?(:ruby2_keywords, true)
-
-        slot_target.block.call(*args, &callback_block)
-      end
-    end
-
-    module ClassMethods
-      def __vc_delegated_slot_targets
-        @__vc_delegated_slot_targets ||= {}
-      end
-
-      def delegate_renders_one(slot, to:, &block)
-        block.ruby2_keywords if block.respond_to?(:ruby2_keywords, true)
-        __vc_delegated_slot_targets[slot] = SlotTarget.new(target: to, block: block, collection: false)
-      end
-
-      def delegate_renders_many(slot, to:, &block)
-        block.ruby2_keywords if block.respond_to?(:ruby2_keywords, true)
-        __vc_delegated_slot_targets[slot] = SlotTarget.new(target: to, block: block, collection: true)
+          # collection getter
+          define_method(plural_name) do
+            get_delegated_slot(plural_name, target)
+          end
+        else
+          # non-collection getter/setter combo
+          define_method(singular_name) do |*args, &block|
+            if args.empty? && block.nil?
+              get_delegated_slot(singular_name, target)
+            else
+              block.ruby2_keywords if block.respond_to?(:ruby2_keywords, true)
+              # Deprecated: Will remove in 3.0
+              set_delegated_slot(singular_name, target, *args, block, delegated_slot_block)
+            end
+          end
+        end
+        send(:ruby2_keywords, singular_name) if respond_to?(:ruby2_keywords, true)
       end
     end
   end
