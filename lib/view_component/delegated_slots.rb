@@ -99,8 +99,10 @@ module ViewComponent
       end
 
       def set_delegated_slot(slot_target, *args, &slot_block)
+        target_obj = instance_eval(slot_target.target.to_s)
+        return target_obj.send(slot_target.singular_name, *args, &slot_block) unless slot_target.block
+
         callback_block = ->(*mod_args) {
-          target_obj = instance_eval(slot_target.target.to_s)
           target_obj.send(slot_target.singular_name, *mod_args, &slot_block)
         }
         callback_block.send(:ruby2_keywords) if callback_block.respond_to?(:ruby2_keywords, true)
