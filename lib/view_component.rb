@@ -12,6 +12,7 @@ module ViewComponent
   autoload :ComponentError
   autoload :DelegatedRender
   autoload :DelegatedSlots
+  autoload :Config
   autoload :Deprecation
   autoload :Instrumentation
   autoload :Preview
