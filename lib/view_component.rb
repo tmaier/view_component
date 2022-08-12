@@ -6,6 +6,7 @@ require "active_support/dependencies/autoload"
 module ViewComponent
   extend ActiveSupport::Autoload
 
+  autoload :AliasedSlots
   autoload :Base
   autoload :Compiler
   autoload :CompileCache

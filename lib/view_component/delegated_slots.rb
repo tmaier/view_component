@@ -54,24 +54,25 @@ module ViewComponent
 
         if collection
           # collection setter
+          # Deprecated: Will remove in 3.0
           define_method(singular_name) do |*args, &block|
             block.ruby2_keywords if block.respond_to?(:ruby2_keywords, true)
-            # Deprecated: Will remove in 3.0
             set_delegated_slot(singular_name, target, *args, block, delegated_slot_block)
           end
 
           # collection getter
+          # Deprecated: Will remove in 3.0
           define_method(plural_name) do
             get_delegated_slot(plural_name, target)
           end
         else
           # non-collection getter/setter combo
+          # Deprecated: Will remove in 3.0
           define_method(singular_name) do |*args, &block|
             if args.empty? && block.nil?
               get_delegated_slot(singular_name, target)
             else
               block.ruby2_keywords if block.respond_to?(:ruby2_keywords, true)
-              # Deprecated: Will remove in 3.0
               set_delegated_slot(singular_name, target, *args, block, delegated_slot_block)
             end
           end
