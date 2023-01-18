@@ -13,7 +13,7 @@ nav_order: 5
 * Update CI configuration to use `Appraisal`.
 
     *Hans Lemuet, Simon Fish*
-    
+
 * Added example of a custom preview controller.
 
     *Graham Rogers*
