@@ -11,14 +11,15 @@ Rake::TestTask.new(:test) do |t|
   t.test_files = FileList["test/**/*_test.rb"]
 end
 
-desc "Runs benchmarks against components"
-task :benchmark do
-  ruby "./performance/benchmark.rb"
+begin
+  require "rspec/core/rake_task"
+  RSpec::Core::RakeTask.new(:spec)
+rescue LoadError
 end
 
-desc "Runs benchmarks against component content area/ slot implementations"
-task :slotable_benchmark do
-  ruby "./performance/slotable_benchmark.rb"
+desc "Runs benchmarks against components"
+task :partial_benchmark do
+  ruby "./performance/partial_benchmark.rb"
 end
 
 task :translatable_benchmark do
@@ -52,10 +53,10 @@ namespace :docs do
     registry.load!(".yardoc")
 
     meths =
-      registry.
-      get("ViewComponent::Base").
-      meths.
-      select do |method|
+      registry
+        .get("ViewComponent::Base")
+        .meths
+        .select do |method|
         !method.tag(:private) &&
           method.path.include?("ViewComponent::Base") &&
           method.visibility == :public &&
@@ -64,14 +65,12 @@ namespace :docs do
 
     instance_methods_to_document = meths.select { |method| method.scope != :class }
     class_methods_to_document = meths.select { |method| method.scope == :class }
-    configuration_methods_to_document = registry.get("ViewComponent::Base").meths.select { |method|
-      method[:mattr_accessor]
-    }
-    test_helper_methods_to_document = registry.
-                                      get("ViewComponent::TestHelpers").
-                                      meths.
-                                      sort_by { |method| method[:name] }.
-                                      select do |method|
+    configuration_methods_to_document = registry.get("ViewComponent::Config").meths.select(&:reader?)
+    test_helper_methods_to_document = registry
+      .get("ViewComponent::TestHelpers")
+      .meths
+      .sort_by { |method| method[:name] }
+      .select do |method|
       !method.tag(:private) &&
         method.visibility == :public
     end
@@ -79,19 +78,28 @@ namespace :docs do
     require "rails"
     require "action_controller"
     require "view_component"
+    ViewComponent::Base.config.view_component_path = "view_component"
     require "view_component/docs_builder_component"
     docs = ActionController::Base.new.render_to_string(
       ViewComponent::DocsBuilderComponent.new(
         sections: [
-          ViewComponent::DocsBuilderComponent::Section.new(heading: "Class methods",
-                                                           methods: class_methods_to_document),
-          ViewComponent::DocsBuilderComponent::Section.new(heading: "Instance methods",
-                                                           methods: instance_methods_to_document),
-          ViewComponent::DocsBuilderComponent::Section.new(heading: "Configuration",
-                                                           methods: configuration_methods_to_document,
-                                                           show_types: false),
-          ViewComponent::DocsBuilderComponent::Section.new(heading: "ViewComponent::TestHelpers",
-                                                           methods: test_helper_methods_to_document)
+          ViewComponent::DocsBuilderComponent::Section.new(
+            heading: "Class methods",
+            methods: class_methods_to_document
+          ),
+          ViewComponent::DocsBuilderComponent::Section.new(
+            heading: "Instance methods",
+            methods: instance_methods_to_document
+          ),
+          ViewComponent::DocsBuilderComponent::Section.new(
+            heading: "Configuration",
+            methods: configuration_methods_to_document,
+            show_types: false
+          ),
+          ViewComponent::DocsBuilderComponent::Section.new(
+            heading: "ViewComponent::TestHelpers",
+            methods: test_helper_methods_to_document
+          )
         ]
       )
     ).chomp

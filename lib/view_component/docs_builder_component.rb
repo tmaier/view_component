@@ -28,7 +28,7 @@ module ViewComponent
       end
 
       def types
-        " → [#{@method.tag(:return).types.join(',')}]" if @method.tag(:return)&.types && show_types?
+        " → [#{@method.tag(:return).types.join(",")}]" if @method.tag(:return)&.types && show_types?
       end
 
       def signature_or_name
@@ -57,7 +57,7 @@ module ViewComponent
 
       def call
         <<~DOCS.chomp
-          #{separator}#{signature_or_name}#{types}#{suffix}
+          `#{separator}#{signature_or_name}`#{types}#{suffix}
 
           #{docstring_and_deprecation_text}
         DOCS

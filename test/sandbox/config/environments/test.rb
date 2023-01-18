@@ -10,7 +10,7 @@ Sandbox::Application.configure do
   config.cache_classes = true
 
   # Show full error reports and disable caching
-  config.consider_all_requests_local       = true
+  config.consider_all_requests_local = true
   config.action_controller.perform_caching = false
 
   # Raise exceptions instead of rendering exception templates
@@ -20,10 +20,6 @@ Sandbox::Application.configure do
   config.action_controller.allow_forgery_protection = false
 
   config.view_component.show_previews = true
-
-  # This line ensures that the old preview_path argument still works.
-  # Remove once we land v3.0.0
-  config.view_component.preview_path = "#{Rails.root}/lib/component_previews_old"
 
   config.view_component.preview_paths << "#{Rails.root}/lib/component_previews"
   config.view_component.render_monkey_patch_enabled = true

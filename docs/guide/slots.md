@@ -1,10 +1,13 @@
 ---
 layout: default
 title: Slots
-parent: Guide
+parent: How-to guide
 ---
 
 # Slots
+
+Since 2.12.0
+{: .label }
 
 In addition to the `content` accessor, ViewComponents can accept content through slots. Think of slots as a way to render multiple blocks of content, including other components.
 
@@ -40,13 +43,13 @@ To render a `renders_many` slot, iterate over the name of the slot:
 
 ```erb
 <%# index.html.erb %>
-<%= render BlogComponent.new do |c| %>
-  <% c.header do %>
+<%= render BlogComponent.new do |component| %>
+  <% component.with_header do %>
     <%= link_to "My blog", root_path %>
   <% end %>
 
   <% BlogPost.all.each do |blog_post| %>
-    <% c.post do %>
+    <% component.with_post do %>
       <%= link_to blog_post.name, blog_post.url %>
     <% end %>
   <% end %>
@@ -63,6 +66,9 @@ Returning:
 ```
 
 ## Predicate methods
+
+Since 2.50.0
+{: .label }
 
 To test whether a slot has been passed to the component, use the provided `#{slot_name}?` method.
 
@@ -124,18 +130,44 @@ end
 
 ```erb
 <%# index.html.erb %>
-<%= render BlogComponent.new do |c| %>
-  <% c.header(classes: "") do %>
+<%= render BlogComponent.new do |component| %>
+  <% component.with_header(classes: "") do %>
     <%= link_to "My Site", root_path %>
   <% end %>
 
-  <% c.post(title: "My blog post") do %>
+  <% component.with_post(title: "My blog post") do %>
     Really interesting stuff.
   <% end %>
 
-  <% c.post(title: "Another post!") do %>
+  <% component.with_post(title: "Another post!") do %>
     Blog every day.
   <% end %>
+<% end %>
+```
+
+## Referencing slots
+
+As the content passed to slots is registered after a component is initialized, it can't be referenced in an initializer. One way to reference slot content is using the `before_render` [lifecycle method](/guide/lifecycle):
+
+```ruby
+# blog_component.rb
+class BlogComponent < ViewComponent::Base
+  renders_one :image
+  renders_many :posts
+
+  def before_render
+    @post_container_classes = "PostContainer--hasImage" if image.present?
+  end
+end
+```
+
+```erb
+<%# blog_component.html.erb %>
+<% posts.each do |post| %>
+  <div class="<%= @post_container_classes %>">
+    <%= image if image? %>
+    <%= post %>
+  </div>
 <% end %>
 ```
 
@@ -175,7 +207,22 @@ class TableComponent < ViewComponent::Base
 end
 ```
 
+To provide content for a lambda slot via a block, add a block parameter. Render the content by calling the block's `call` method, or by passing the block directly to `content_tag`:
+
+```ruby
+class BlogComponent < ViewComponent::Base
+  renders_one :header, -> (classes:, &block) do
+    content_tag :h1, class: classes, &block
+  end
+end
+```
+
+_Note: While a lambda is called when the `with_*` method is called, a returned component isn't rendered until first use._
+
 ## Rendering collections
+
+Since 2.23.0
+{: .label }
 
 `renders_many` slots can also be passed a collection, using the plural setter (`links` in this example):
 
@@ -202,8 +249,8 @@ end
 
 ```erb
 <%# index.html.erb %>
-<%= render(NavigationComponent.new) do |c| %>
-  <% c.links([
+<%= render(NavigationComponent.new) do |component| %>
+  <% component.with_links([
     { name: "Home", href: "/" },
     { name: "Pricing", href: "/pricing" },
     { name: "Sign Up", href: "/sign-up" },
@@ -213,26 +260,28 @@ end
 
 ## `#with_content`
 
+Since 2.31.0
+{: .label }
+
 Slot content can also be set using `#with_content`:
 
 ```erb
-<%= render BlogComponent.new do |c| %>
-  <% c.header(classes: "title").with_content("My blog") %>
+<%= render BlogComponent.new do |component| %>
+  <% component.with_header(classes: "title").with_content("My blog") %>
 <% end %>
 ```
 
-_To view documentation for content_areas (deprecated) and the original implementation of Slots (deprecated), see [/content_areas](/content_areas) and [/slots_v1](/slots_v1)._
+## Polymorphic slots
 
-## Polymorphic slots (Experimental)
+Since 2.42.0
+{: .label }
 
-Polymorphic slots can render one of several possible slots. To use this experimental feature, include `ViewComponent::PolymorphicSlots`.
+Polymorphic slots can render one of several possible slots.
 
 For example, consider this list item component that can be rendered with either an icon or an avatar visual. The `visual` slot is passed a hash mapping types to slot definitions:
 
 ```ruby
 class ListItemComponent < ViewComponent::Base
-  include ViewComponent::PolymorphicSlots
-
   renders_one :visual, types: {
     icon: IconComponent,
     avatar: lambda { |**system_arguments|
@@ -247,14 +296,24 @@ end
 Filling in the `visual` slot is done by calling the appropriate slot method:
 
 ```erb
-<%= render ListItemComponent.new do |c| %>
-  <% c.visual_avatar(src: "http://some-site.com/my_avatar.jpg", alt: "username") %>
+<%= render ListItemComponent.new do |component| %>
+  <% component.with_visual_avatar(src: "http://some-site.com/my_avatar.jpg", alt: "username") do %>
     Profile
   <% end >
 <% end %>
-<%= render ListItemComponent.new do |c| %>
-  <% c.visual_icon(icon: :key) %>
+<%= render ListItemComponent.new do |component| %>
+  <% component.with_visual_icon(icon: :key) do %>
     Security Settings
   <% end >
+<% end %>
+```
+
+To see whether a polymorphic slot has been passed to the component, use the `#{slot_name}?` method.
+
+```erb
+<% if visual? %>
+  <%= visual %>
+<% else %>
+  <span class="visual-placeholder">N/A</span>
 <% end %>
 ```
