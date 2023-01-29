@@ -10,6 +10,10 @@ nav_order: 5
 
 ## main
 
+* Improve documentation about the known issue re. `form_for`
+
+    *Tobias L. Maier*
+
 * Added example of a custom preview controller.
 
     *Graham Rogers*
